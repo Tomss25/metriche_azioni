@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrice Pesi Metriche — Screening per Settore</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Palette: Intestazione Light Blue, Tabella Grigio Chiaro */
+  --bg: #eaedf0; 
+  --surface: #f4f6f8; /* Grigio chiaro per la tabella interna */
+  --surface2: #e2e8f0; /* Grigio per header di settore */
+  
+  --header-bg: #5da9e9; /* Light blue per intestazione colonne */
+  --header-text: #ffffff;
+  
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.15);
+  --border-light: rgba(255,255,255,0.3);
+  
+  --text: #2c3e50;
+  --muted: #6c7a89;
+  --accent: #2980b9; 
+  
+  --warn: #d35400;
+  --ok: #27ae60;
+  --na: #95a5a6;
+  
+  --mono: 'DM Mono', monospace;
+  --serif: 'Fraunces', serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* HEADER PRINCIPALE */
+.header {
+  padding: 3rem 2.5rem 2rem;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+}
+.header-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+.header h1 {
+  font-family: var(--serif);
+  font-size: 2.2rem;
+  font-weight: 300;
+  color: #1a252f;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+.header h1 em { font-style: italic; color: var(--accent); }
+.header-sub { color: var(--muted); font-size: 12px; max-width: 600px; line-height: 1.7; }
+
+/* LEGEND */
+.legend {
+  display: flex; align-items: center; gap: 1.5rem;
+  padding: 1rem 2.5rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  background: #ffffff;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text); }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+/* METRICS LEGEND (INTESTAZIONE TABELLA LIGHT BLUE) */
+.metrics-bar {
+  display: grid;
+  grid-template-columns: 220px repeat(5, 1fr) 1fr;
+  gap: 0;
+  padding: 0 2.5rem;
+  background: var(--header-bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.metrics-bar-cell {
+  padding: 10px 8px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--header-text);
+  border-right: 1px solid var(--border-light);
+  font-weight: 600;
+}
+.metrics-bar-cell:first-child { color: #ffffff; }
+.metrics-bar-cell:last-child { border-right: none; }
+
+/* SEARCH */
+.search-wrap {
+  padding: 1rem 2.5rem;
+  border-bottom: 1px solid var(--border);
+  background: #ffffff;
+}
+.search-wrap input {
+  background: #f8f9fa;
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 7px 12px;
+  width: 320px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.search-wrap input:focus { border-color: var(--accent); background: #ffffff; }
+
+/* SECTOR BLOCK */
+.sector-block { border-bottom: 1px solid var(--border); background: var(--surface); }
+.sector-header {
+  display: grid;
+  grid-template-columns: 220px repeat(5, 1fr) 1fr;
+  gap: 0;
+  padding: 0 2.5rem;
+  background: var(--surface2);
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--border);
+}
+.sector-header:hover { background: #d0d7e1; }
+.sector-header-name {
+  padding: 11px 8px;
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a252f;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-right: 1px solid var(--border);
+}
+.sector-chevron { font-size: 10px; color: var(--muted); transition: transform 0.2s; }
+.sector-avg-cell {
+  padding: 11px 8px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sector-avg-cell:last-child { border-right: none; }
+
+/* INDUSTRY ROW */
+.industry-rows { display: none; }
+.industry-rows.open { display: block; }
+.industry-row {
+  display: grid;
+  grid-template-columns: 220px repeat(5, 1fr) 1fr;
+  gap: 0;
+  padding: 0 2.5rem;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+  background: var(--surface);
+}
+.industry-row:last-child { border-bottom: none; }
+.industry-row:hover { background: #ffffff; }
+.industry-name {
+  padding: 10px 8px 10px 20px;
+  color: var(--text);
+  font-size: 12px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+}
+.weight-cell {
+  padding: 8px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.weight-cell:last-child { border-right: none; }
+.weight-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px; height: 26px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.w-high { background: rgba(39,174,96,0.15); color: var(--ok); }
+.w-mid  { background: rgba(211,84,0,0.12);  color: var(--warn); }
+.w-low  { background: rgba(41,128,185,0.15); color: var(--accent); }
+.w-na   { background: rgba(0,0,0,0.06); color: var(--na); }
+.note-cell {
+  padding: 8px 10px;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+}
+
+/* ALTERNATIVES PANEL */
+.alt-panel {
+  padding: 12px 2.5rem 12px calc(2.5rem + 220px);
+  background: #eef2f5;
+  border-bottom: 1px solid var(--border);
+}
+.alt-panel-title {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.alt-list {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.alt-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid rgba(41,128,185,0.25);
+  border-radius: 3px;
+  font-size: 11px;
+  color: var(--text);
+  background: #ffffff;
+}
+.alt-chip span { color: var(--ok); font-weight: 500; }
+
+/* SCORE BAR */
+.score-bar-wrap { display: flex; align-items: center; gap: 6px; width: 100%; }
+.score-bar {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(0,0,0,0.1);
+  flex: 1;
+  overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+/* FOOTER */
+.footer {
+  padding: 2rem 2.5rem;
+  border-top: 1px solid var(--border);
+  background: #ffffff;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+.footer strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .metrics-bar, .sector-header, .industry-row {
+    grid-template-columns: 160px repeat(5, 1fr);
+  }
+  .note-cell { display: none; }
+  .alt-panel { padding-left: 1rem; }
+  .header, .legend, .search-wrap { padding-left: 1rem; padding-right: 1rem; }
+  .sector-block .industry-row, .sector-block .alt-panel { padding-left: 1rem; padding-right: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">Framework · Screening Fondamentale</div>
+  <h1>Matrice Pesi <em>Metriche</em><br>per Settore & Industria</h1>
+  <p class="header-sub">Aggiornamento trimestrale. Pesi stabili, indipendenti dal ciclo macroeconomico. Somma = 100% per ogni industria. Le celle N/A indicano metriche strutturalmente non significative per quel segmento.</p>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--ok)"></div> Peso alto (≥25%)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--warn)"></div> Peso medio (15–24%)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> Peso basso (5–14%)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--na)"></div> N/A — strutturalmente non applicabile</div>
+  <div class="legend-item" style="margin-left:auto;font-size:11px;color:var(--muted)">Clicca settore per espandere</div>
+</div>
+
+<div class="search-wrap">
+  <input type="text" id="searchInput" placeholder="Cerca settore o industria..." oninput="filterRows(this.value)">
+</div>
+
+<div class="metrics-bar">
+  <div class="metrics-bar-cell">Settore / Industria</div>
+  <div class="metrics-bar-cell">T1 · PEG</div>
+  <div class="metrics-bar-cell">T2 · FCF</div>
+  <div class="metrics-bar-cell">T3 · ROIC</div>
+  <div class="metrics-bar-cell">T4 · Div.</div>
+  <div class="metrics-bar-cell">T5 · Liq.</div>
+  <div class="metrics-bar-cell">Note chiave</div>
+</div>
+
+<div id="matrixBody"></div>
+
+<div class="footer">
+  <strong>T1 · Trappola del Valore</strong> — P/E vs PEG &nbsp;|&nbsp; <strong>T2 · Miraggio Contabile</strong> — FCF / Net Income &nbsp;|&nbsp; <strong>T3 · Leva Mascherata</strong> — ROE vs ROIC &nbsp;|&nbsp; <strong>T4 · Esca per Polli</strong> — Dividend Yield vs Payout &nbsp;|&nbsp; <strong>T5 · Asfissia Imminente</strong> — Quick Ratio + Interest Coverage<br><br>
+  I pesi riflettono la rilevanza diagnostica di ciascuna metrica nello screening iniziale per quella specifica industria. Non sostituiscono la due diligence. Aggiornare i dati ogni 3 mesi come da piano.
+</div>
+
+<script>
+const data = [
+  {
+    sector: "Basic Materials",
+    industries: [
+      { name:"Agricultural Inputs",      w:[20,25,25,10,20], note:"FCF e ROIC dominano: capex ciclico elevato, margini stretti" },
+      { name:"Aluminum",                 w:[15,25,30,10,20], note:"ROIC centrale: commodity pura, ritorno su capitale è tutto" },
+      { name:"Building Materials",       w:[20,25,25,10,20], note:"Bilanciato; liq. conta per ciclicità domanda costruzioni" },
+      { name:"Chemicals",                w:[20,25,25,10,20], note:"Capex intensivo → FCF+ROIC primari" },
+      { name:"Coking Coal",              w:[15,25,30,10,20], note:"ROIC max: spread prezzo/costo operativo è il vero motore" },
+      { name:"Copper",                   w:[15,25,30,10,20], note:"Commodity ciclica: ROIC e liquidità dominano sul PEG" },
+      { name:"Gold",                     w:[10,20,30,15,25], note:"Liq. alta: in stress macro la sopravvivenza è priorità" },
+      { name:"Lumber & Wood Production", w:[20,25,25,10,20], note:"FCF volatile per ciclicità; liq. monitorare scorte" },
+      { name:"Other Ind. Metals & Mining",w:[15,25,30,10,20], note:"Come copper/aluminum" },
+      { name:"Other Prec. Metals & Mining",w:[10,20,30,15,25], note:"Come gold" },
+      { name:"Paper & Paper Products",   w:[20,25,25,10,20], note:"Settore maturo; capex elevato; FCF discriminante chiave" },
+      { name:"Specialty Chemicals",      w:[25,25,20,10,20], note:"Crescita differenziata → PEG più rilevante vs commodity" },
+      { name:"Steel",                    w:[15,25,30,10,20], note:"Commodity ciclica: ROIC e liq. dominano" },
+    ]
+  },
+  {
+    sector: "Communication Services",
+    industries: [
+      { name:"Advertising Agencies",     w:[25,25,20,10,20], note:"FCF elevato, Capex basso; crescita rilevante per valutazione" },
+      { name:"Broadcasting",             w:[20,20,20,20,20], note:"Dividendi storici importanti; FCF fondamentale per payout" },
+      { name:"Electronic Gaming & Multimedia",w:[30,25,20,5,20], note:"Crescita è tutto; dividendo quasi assente nel settore" },
+      { name:"Entertainment",            w:[30,25,20,5,20], note:"IP e crescita abbonati; FCF discrimina studios redditizi" },
+      { name:"Internet Content & Info",  w:[35,25,20,5,15], note:"PEG max: valutazioni a multipli alti giustificate solo da crescita" },
+      { name:"Publishing",               w:[20,25,20,20,15], note:"Business maturo; dividendo sostenibile è segnale qualità" },
+      { name:"Telecom Services",         w:[15,20,20,30,15], note:"T4 primario: yield alto comune, rischio taglio è il check chiave" },
+    ]
+  },
+  {
+    sector: "Consumer Cyclical",
+    industries: [
+      { name:"Apparel Manufacturing",    w:[20,25,20,10,25], note:"Liq. alta: scorte stagionali → Quick Ratio critico" },
+      { name:"Apparel Retail",           w:[20,20,15,10,35], note:"Liq. max: turnover scorte è il KPI di sopravvivenza" },
+      { name:"Auto & Truck Dealerships", w:[20,20,20,10,30], note:"Inventario = attivo principale → Quick Ratio discriminante" },
+      { name:"Auto Manufacturers",       w:[15,25,30,10,20], note:"Capex enorme; ROIC misura vera creazione di valore" },
+      { name:"Auto Parts",               w:[20,25,25,10,20], note:"FCF e ROIC: margini stretti, capex continuo" },
+      { name:"Department Stores",        w:[15,20,15,10,40], note:"Liq. dominante: business in strutturale declino, sopravvivenza è focus" },
+      { name:"Footwear & Accessories",   w:[20,25,20,10,25], note:"Come apparel; brand premium giustifica PEG più alto" },
+      { name:"Furnishings, Fix & Appl.", w:[20,20,20,10,30], note:"Ciclico puro; liq. e scorte determinanti" },
+      { name:"Gambling",                 w:[20,25,25,10,20], note:"FCF elevatissimo se licenze consolidate; ROIC su capex strutture" },
+      { name:"Home Improvement Retail",  w:[20,25,20,10,25], note:"Bilanciato; liq. per gestione scorte stagionali" },
+      { name:"Internet Retail",          w:[30,30,20,5,15], note:"FCF+PEG dominano: unit economics e crescita sono tutto" },
+      { name:"Leisure",                  w:[25,25,20,5,25], note:"Liq. stagionale importante; FCF discriminante qualità" },
+      { name:"Lodging",                  w:[20,25,25,10,20], note:"ROIC su capex proprietà; FCF per sostenibilità" },
+      { name:"Luxury Goods",             w:[25,25,20,15,15], note:"Brand moat: PEG e FCF primari; liq. meno critica" },
+      { name:"Packaging & Containers",   w:[20,25,25,10,20], note:"Capex elevato; ROIC e FCF discriminanti" },
+      { name:"Personal Services",        w:[25,30,20,5,20], note:"Asset-light: FCF è proxy diretto della qualità" },
+      { name:"Recreational Vehicles",    w:[20,20,25,10,25], note:"Ciclico estremo; liq. e ROIC fondamentali" },
+      { name:"Residential Construction", w:[15,20,25,10,30], note:"Scorte/terreni = attivo illiquido → Liq. critica" },
+      { name:"Resorts & Casinos",        w:[20,25,25,10,20], note:"Come gambling+lodging; capex strutture elevato" },
+      { name:"Restaurants",              w:[25,30,20,10,15], note:"FCF max: unit economics per location è il KPI" },
+      { name:"Specialty Retail",         w:[20,20,15,10,35], note:"Come dept stores ma con nicchie difendibili" },
+      { name:"Textile Manufacturing",    w:[15,25,20,10,30], note:"Margini stretti; scorte critiche → Liq. alta" },
+      { name:"Travel Services",          w:[25,25,20,5,25], note:"Post-ciclo: FCF discrimina chi ha modello solido" },
+    ]
+  },
+  {
+    sector: "Consumer Defensive",
+    industries: [
+      { name:"Beverages - Brewers",      w:[20,25,15,25,15], note:"T4 primario: dividendo è segnale moat; FCF supporta yield" },
+      { name:"Beverages - Non-Alcoholic",w:[20,25,15,25,15], note:"Come brewers; brand forti → dividendi sostenibili" },
+      { name:"Beverages - Wineries",     w:[20,25,15,20,20], note:"Più variabile; liq. per scorte invecchiamento" },
+      { name:"Confectioners",            w:[20,25,15,25,15], note:"Defensive classico; dividendo sostenibile = qualità" },
+      { name:"Discount Stores",          w:[20,20,20,15,25], note:"Liq. per rotazione scorte; ROIC su base asset" },
+      { name:"Education & Training Svcs",w:[25,30,20,5,20], note:"Asset-light; FCF e PEG per crescita iscrizioni" },
+      { name:"Farm Products",            w:[15,25,25,15,20], note:"Commodity; ROIC e FCF per stagionalità" },
+      { name:"Food Distribution",        w:[15,25,25,10,25], note:"Margini minimi; liq. critica per capital cycle" },
+      { name:"Grocery Stores",           w:[15,20,20,15,30], note:"Liq. max: inventario deperibile → Quick Ratio critico" },
+      { name:"Household & Personal Prod",w:[20,25,15,25,15], note:"Defensive con moat brand; dividendo sostenibile" },
+      { name:"Packaged Foods",           w:[20,25,15,25,15], note:"Come household products" },
+      { name:"Tobacco",                  w:[10,20,15,40,15], note:"T4 dominante: il dividendo è la tesi di investimento intera" },
+    ]
+  },
+  {
+    sector: "Energia",
+    alts: [
+      { metric:"EV/EBITDA", w:"20%", why:"Sostituisce P/E: normalizza ciclo commodity e ammortamenti" },
+      { metric:"Debt/EBITDA", w:"15%", why:"Chiave per leverage in settore capital-intensive" },
+      { metric:"Breakeven price ($/bbl)", w:"10%", why:"Indica resilienza nei cicli di prezzo" },
+    ],
+    industries: [
+      { name:"Oil & Gas Drilling",       w:[10,25,30,10,25], note:"ROIC max: utilizzo rig e dayrate sono il motore; liq. per leverage" },
+      { name:"Oil & Gas E&P",            w:[10,25,35,10,20], note:"ROIC dominante: finding cost vs price realization" },
+      { name:"Oil & Gas Equip & Svcs",   w:[15,25,30,10,20], note:"Come drilling; ciclico puro" },
+      { name:"Oil & Gas Integrated",     w:[10,25,25,20,20], note:"T4 rilevante: majors con dividendi strutturali" },
+      { name:"Oil & Gas Midstream",      w:[10,20,20,35,15], note:"T4 dominante: modello fee-based, dividendo è il prodotto" },
+      { name:"Oil & Gas Refining",       w:[10,30,25,15,20], note:"FCF max: crack spread → margine di raffinazione" },
+      { name:"Thermal Coal",             w:[5,25,35,10,25], note:"PEG quasi irrilevante: business in declino strutturale" },
+      { name:"Uranium",                  w:[15,20,30,10,25], note:"ROIC e liq.: ciclico con supply constraint strutturale" },
+    ]
+  },
+  {
+    sector: "Finanza",
+    alts: [
+      { metric:"P/Book Value", w:"25%", why:"Sostituisce P/E per banche: valuta premio su patrimonio tangibile" },
+      { metric:"NIM (Net Interest Margin)", w:"20%", why:"Misura redditività core del lending book" },
+      { metric:"NPL Ratio", w:"15%", why:"Qualità del credito = rischio nascosto nei bilanci" },
+      { metric:"P/FFO (per assicurazioni)", w:"15%", why:"Normalizza utile assicurativo vs oscillazioni riserve" },
+      { metric:"Combined Ratio", w:"10%", why:"Efficienza operativa assicurativa (sinistri+costi/premi)" },
+    ],
+    industries: [
+      { name:"Asset Management",         w:[20,0,25,30,25], note:"T2 N/A strutturale; T4 dominante: fee+dividendi" },
+      { name:"Banks - Diversified",      w:[5,0,25,30,40], note:"T2 N/A; T5 max: liquidità bancaria è requisito regolatorio" },
+      { name:"Banks - Regional",         w:[5,0,25,30,40], note:"Come diversified; più esposto a concentrazione crediti" },
+      { name:"Capital Markets",          w:[20,0,25,25,30], note:"T2 N/A; liq. e dividendo per broker/dealer" },
+      { name:"Credit Services",          w:[10,0,25,25,40], note:"T5 max: funding liquidity è rischio sistemico" },
+      { name:"Financial Conglomerates",  w:[15,0,25,30,30], note:"T2 N/A; mix banca+assicurazione" },
+      { name:"Financial Data & Exchanges",w:[30,20,25,15,10], note:"Asset-light: FCF parzialmente applicabile; PEG su crescita dati" },
+      { name:"Insurance - Diversified",  w:[10,0,20,35,35], note:"T2 N/A; T4+T5: dividendo e solvency ratio" },
+      { name:"Insurance - Life",         w:[5,0,20,35,40], note:"T5 max: duration mismatch assets/liabilities è rischio chiave" },
+      { name:"Insurance - P&C",          w:[10,0,20,35,35], note:"Combined ratio > T2; T4 per dividendo stabile" },
+      { name:"Insurance - Reinsurance",  w:[10,0,20,30,40], note:"T5 max: tail risk e capitalizzazione" },
+      { name:"Insurance - Specialty",    w:[15,0,20,30,35], note:"Come P&C con nicchie" },
+      { name:"Insurance Brokers",        w:[25,25,25,15,10], note:"Asset-light: T2 applicabile; margini FCF alti" },
+      { name:"Mortgage Finance",         w:[5,0,15,35,45], note:"T5 dominante: funding spread e duration mismatch" },
+      { name:"Shell Companies",          w:[0,0,0,0,100], note:"Solo sopravvivenza: l'unica metrica è se esiste cassa" },
+    ]
+  },
+  {
+    sector: "Immobiliare",
+    alts: [
+      { metric:"P/FFO (Price/Funds From Operations)", w:"30%", why:"Sostituisce P/E per REIT: normalizza ammortamenti non-cash su immobili" },
+      { metric:"NAV Premium/Discount", w:"20%", why:"Indica se il titolo tratta sopra/sotto il valore degli asset" },
+      { metric:"LTV (Loan-to-Value)", w:"15%", why:"Leva sul portafoglio immobiliare; rischio rifinanziamento" },
+      { metric:"Dividend Yield + AFFO Payout", w:"15%", why:"AFFO (Adjusted FFO) è il FCF dei REIT; payout su AFFO indica sostenibilità" },
+    ],
+    industries: [
+      { name:"Real Estate - Development", w:[15,15,30,10,30], note:"ROIC e liq. dominano: ciclico, capex enorme, scorte illiquide" },
+      { name:"Real Estate - Diversified", w:[10,10,25,30,25], note:"T4 rilevante; P/FFO è la metrica da affiancare" },
+      { name:"Real Estate Services",      w:[25,25,20,15,15], note:"Asset-light: PEG e FCF applicabili normalmente" },
+      { name:"REIT - Diversified",        w:[5,5,20,45,25], note:"T4 max: distribuzione 90% obbligatoria per legge" },
+      { name:"REIT - Healthcare",         w:[5,5,20,45,25], note:"Come diversified; contratti long-term riducono rischio" },
+      { name:"REIT - Hotel & Motel",      w:[10,10,25,30,25], note:"Più ciclico: liq. importante; T4 variabile" },
+      { name:"REIT - Industrial",         w:[5,5,20,45,25], note:"T4 max: domanda e-commerce strutturale, yield solido" },
+      { name:"REIT - Mortgage",           w:[5,0,15,45,35], note:"T2 N/A; T4+T5: spread NIM e leva sono il business" },
+      { name:"REIT - Office",             w:[5,5,20,40,30], note:"Occupancy risk crescente; T5 per rifinanziamento debiti" },
+      { name:"REIT - Residential",        w:[5,5,20,45,25], note:"T4 dominante; affitti indicizzati all'inflazione" },
+      { name:"REIT - Retail",             w:[5,5,20,40,30], note:"Pressione strutturale e-commerce; T5 critico" },
+      { name:"REIT - Specialty",          w:[5,5,20,45,25], note:"Come diversified" },
+    ]
+  },
+  {
+    sector: "Industriali",
+    industries: [
+      { name:"Aerospace & Defense",      w:[20,25,30,10,15], note:"ROIC su programmi pluriennali; backlog è proxy crescita" },
+      { name:"Airlines",                 w:[10,20,25,5,40], note:"T5 max: cash burn in downturn è rischio esistenziale" },
+      { name:"Airports & Air Services",  w:[15,20,30,15,20], note:"Asset pesante; ROIC su concessioni; T4 per infrastruttura" },
+      { name:"Building Products & Equip",w:[20,25,25,10,20], note:"Ciclico con capex; bilanciato" },
+      { name:"Conglomerates",            w:[20,25,25,15,15], note:"T4 rilevante: holding con dividendi storici" },
+      { name:"Consulting Services",      w:[30,30,20,5,15], note:"Asset-light: FCF e PEG primari, quasi zero capex" },
+      { name:"Electrical Equipment",     w:[20,25,25,10,20], note:"Capex moderato; bilanciato" },
+      { name:"Engineering & Construction",w:[15,20,25,10,30], note:"T5 alta: WIP e crediti verso clienti → Quick Ratio" },
+      { name:"Farm & Heavy Const. Mach.",w:[20,25,25,10,20], note:"Capex+ciclo commodity; ROIC e FCF discriminanti" },
+      { name:"Industrial Distribution",  w:[20,25,20,10,25], note:"Liq. per rotazione inventario; FCF importante" },
+      { name:"Integrated Freight & Log.",w:[20,25,25,10,20], note:"Capex veicoli/infrastruttura; ROIC misura ritorno" },
+      { name:"Marine Shipping",          w:[10,20,30,10,30], note:"ROIC su flotta; T5 per leva e rifinanziamento" },
+      { name:"Metal Fabrication",        w:[20,25,25,10,20], note:"Come building products" },
+      { name:"Pollution & Treatment",    w:[20,25,25,10,20], note:"Regolatorio stabile; bilanciato" },
+      { name:"Railroads",                w:[15,20,30,20,15], note:"ROIC su infrastruttura; T4 per dividendo storico" },
+      { name:"Rental & Leasing Services",w:[20,25,25,10,20], note:"ROIC su fleet; FCF per ammortamenti elevati" },
+      { name:"Security & Protection",    w:[25,30,20,10,15], note:"Asset-light recurring: FCF e PEG primari" },
+      { name:"Specialty Business Svcs",  w:[25,30,20,10,15], note:"Come consulting" },
+      { name:"Specialty Industrial Mach.",w:[20,25,25,10,20], note:"Capex R&D; bilanciato" },
+      { name:"Staffing & Employment",    w:[25,30,20,5,20], note:"Asset-light; FCF e PEG; dividendo marginale" },
+      { name:"Tools & Accessories",      w:[20,25,25,10,20], note:"Brand moat moderato; bilanciato" },
+      { name:"Trucking",                 w:[15,20,25,10,30], note:"T5 alta: fuel + leva + ciclicità" },
+      { name:"Waste Management",         w:[20,20,25,20,15], note:"Infrastruttura regolata; T4 per dividendi stabili" },
+    ]
+  },
+  {
+    sector: "Salute",
+    industries: [
+      { name:"Biotechnology",            w:[35,25,20,5,15], note:"PEG max: pipeline = valore; FCF spesso negativo in early stage" },
+      { name:"Diagnostics & Research",   w:[25,30,20,5,20], note:"FCF ricorrente se contratti; PEG per crescita volumi" },
+      { name:"Drug Manufacturers - Gen.",w:[20,25,25,15,15], note:"FCF e ROIC: patent cliff è il rischio chiave" },
+      { name:"Drug Manuf. - Spec/Gen.",  w:[20,25,25,15,15], note:"Come general; pricing pressure generici" },
+      { name:"Health Information Svcs",  w:[30,30,20,5,15], note:"SaaS-like: FCF e PEG dominano" },
+      { name:"Healthcare Plans",         w:[20,25,20,15,20], note:"Medical Loss Ratio è la vera metrica; bilanciato" },
+      { name:"Medical Care Facilities",  w:[20,25,20,10,25], note:"Liq. importante: rimborsi lenti → Quick Ratio" },
+      { name:"Medical Devices",          w:[25,25,25,10,15], note:"ROIC su R&D capitalizzato; PEG per innovazione" },
+      { name:"Medical Distribution",     w:[15,25,20,15,25], note:"Margini minimi; liq. e FCF critici" },
+      { name:"Medical Instruments",      w:[25,25,25,10,15], note:"Come devices" },
+    ]
+  },
+  {
+    sector: "Strumenti (Utilities)",
+    alts: [
+      { metric:"RAB (Regulatory Asset Base) yield", w:"20%", why:"Il rendimento sul patrimonio regolato è il motore di valore" },
+      { metric:"Debt/EBITDA", w:"15%", why:"Leverage è strutturale nel settore; monitorare rifinanziamento" },
+      { metric:"Interest Coverage (EBITDA/Interest)", w:"15%", why:"Variante più robusta della copertura interessi per utility" },
+    ],
+    industries: [
+      { name:"Utilities - Diversified",  w:[10,15,20,40,15], note:"T4 dominante: dividendo regolato è la tesi di investimento" },
+      { name:"Utilities - Indep. Power", w:[10,20,25,25,20], note:"ROIC su capacità installata; T4 per merchant power" },
+      { name:"Utilities - Reg. Electric",w:[5,15,20,45,15], note:"T4 max: tariffa regolata → dividendo prevedibile" },
+      { name:"Utilities - Reg. Gas",     w:[5,15,20,45,15], note:"Come regulated electric" },
+      { name:"Utilities - Reg. Water",   w:[5,15,20,45,15], note:"Massima stabilità: monopolio naturale regolato" },
+      { name:"Utilities - Renewable",    w:[15,20,25,25,15], note:"ROIC su capex impianti; T4 in crescita con maturità" },
+    ]
+  },
+  {
+    sector: "Tecnologia",
+    industries: [
+      { name:"Communication Equipment",  w:[20,25,25,5,25], note:"Capex R&D; liq. per cicli prodotto" },
+      { name:"Computer Hardware",        w:[20,25,25,5,25], note:"Come comm. equipment; margini più ciclici" },
+      { name:"Consumer Electronics",     w:[20,25,20,5,30], note:"Liq. alta: scorte obsolescenza rapida → Quick Ratio" },
+      { name:"Electronic Components",    w:[20,25,25,5,25], note:"Capex fab; ROIC e FCF primari" },
+      { name:"Electronics & Comp. Distr",w:[15,25,15,5,40], note:"T5 max: distribuzione margini minimi, liq. è tutto" },
+      { name:"IT Services",              w:[25,30,25,5,15], note:"Asset-light: FCF e PEG dominano con recurring revenue" },
+      { name:"Scientific & Tech. Instr.",w:[25,25,25,5,20], note:"Bilanciato; R&D come capex" },
+      { name:"Semiconductor Equip & Mat",w:[20,25,30,5,20], note:"ROIC su R&D; ciclo capex semiconduttori" },
+      { name:"Semiconductors",           w:[20,25,30,5,20], note:"ROIC max: fab intensity e yield sono il vantaggio" },
+      { name:"Software - Application",   w:[35,30,20,5,10], note:"PEG+FCF dominanti: crescita ARR e FCF margin" },
+      { name:"Software - Infrastructure",w:[30,35,20,5,10], note:"FCF max: infrastructure software ha margini FCF 40%+" },
+      { name:"Solar",                    w:[20,20,30,5,25], note:"ROIC su installato; T5 per leva su capex progetti" },
+    ]
+  },
+];
+
+function weightClass(w) {
+  if (w === 0) return 'w-na';
+  if (w >= 25) return 'w-high';
+  if (w >= 15) return 'w-mid';
+  return 'w-low';
+}
+function barColor(w) {
+  if (w === 0) return '#bdc3c7';
+  if (w >= 25) return '#27ae60';
+  if (w >= 15) return '#d35400';
+  return '#2980b9';
+}
+
+function renderMatrix() {
+  const body = document.getElementById('matrixBody');
+  let html = '';
+
+  data.forEach((sector, si) => {
+    const sectorId = `sector-${si}`;
+    html += `<div class="sector-block" id="block-${si}">`;
+    html += `<div class="sector-header" onclick="toggleSector(${si})">`;
+    html += `<div class="sector-header-name"><span class="sector-chevron" id="chev-${si}">▶</span>${sector.sector}</div>`;
+    
+    const cols = [0,1,2,3,4];
+    cols.forEach(ci => {
+      const vals = sector.industries.map(ind => ind.w[ci]);
+      const avg = Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+      html += `<div class="sector-avg-cell"><div class="score-bar-wrap"><div class="score-bar"><div class="score-bar-fill" style="width:${avg*2.8}%;background:${barColor(avg)}"></div></div><span style="font-size:10px;color:var(--muted);min-width:28px;text-align:right">${avg}%</span></div></div>`;
+    });
+    html += `<div class="sector-avg-cell" style="font-size:10px;color:var(--muted)">media</div>`;
+    html += `</div>`;
+
+    if (sector.alts) {
+      html += `<div id="alt-${si}" style="display:none"><div class="alt-panel">`;
+      html += `<div class="alt-panel-title">Metriche alternative consigliate per ${sector.sector}</div>`;
+      html += `<div class="alt-list">`;
+      sector.alts.forEach(a => {
+        html += `<div class="alt-chip">${a.metric} <span>${a.w}</span> <span style="color:var(--muted);font-size:10px">— ${a.why}</span></div>`;
+      });
+      html += `</div></div></div>`;
+    }
+
+    html += `<div class="industry-rows" id="${sectorId}">`;
+    sector.industries.forEach(ind => {
+      html += `<div class="industry-row" data-name="${ind.name.toLowerCase()} ${sector.sector.toLowerCase()}">`;
+      html += `<div class="industry-name">${ind.name}</div>`;
+      ind.w.forEach(w => {
+        const cls = weightClass(w);
+        const label = w === 0 ? 'N/A' : `${w}%`;
+        html += `<div class="weight-cell"><div class="weight-badge ${cls}">${label}</div></div>`;
+      });
+      html += `<div class="note-cell">${ind.note}</div>`;
+      html += `</div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  body.innerHTML = html;
+}
+
+function toggleSector(si) {
+  const rows = document.getElementById(`sector-${si}`);
+  const chev = document.getElementById(`chev-${si}`);
+  const altPanel = document.getElementById(`alt-${si}`);
+  const isOpen = rows.classList.contains('open');
+  rows.classList.toggle('open', !isOpen);
+  if (altPanel) altPanel.style.display = isOpen ? 'none' : 'block';
+  chev.style.transform = isOpen ? '' : 'rotate(90deg)';
+}
+
+function filterRows(q) {
+  const term = q.toLowerCase().trim();
+  document.querySelectorAll('.industry-row').forEach(row => {
+    const name = row.dataset.name || '';
+    row.style.display = (!term || name.includes(term)) ? '' : 'none';
+  });
+  
+  data.forEach((sector, si) => {
+    const rows = document.getElementById(`sector-${si}`);
+    const block = document.getElementById(`block-${si}`);
+    if (!term) {
+      rows.classList.remove('open');
+      document.getElementById(`chev-${si}`).style.transform = '';
+      const alt = document.getElementById(`alt-${si}`);
+      if (alt) alt.style.display = 'none';
+      return;
+    }
+    const visible = [...rows.querySelectorAll('.industry-row')].some(r => r.style.display !== 'none');
+    rows.classList.toggle('open', visible);
+    document.getElementById(`chev-${si}`).style.transform = visible ? 'rotate(90deg)' : '';
+    const alt = document.getElementById(`alt-${si}`);
+    if (alt) alt.style.display = visible ? 'block' : 'none';
+  });
+}
+
+renderMatrix();
+</script>
+</body>
+</html>
